@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="carGame">
+        <div class="score"></div>
+        <div class="startScreen">
+            <p>Press here to start <br>
+                Arrow keys to move <br>
+                If you hit another car you will lose</p>
+        </div>
+        <div class="gameArea"> </div>
+    </div>
+
+    <script>
+        const score = document.querySelector('.score');
+        const startScreen = document.querySelector('.startScreen');
+        const gameArea = document.querySelector('.gameArea');
+
+        startScreen.addEventListener('click', start);
+
+        let player = { speed: 5, score: 0};
+
+        let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+        document.addEventListener('keydown', keyDown);
+        document.addEventListener('keyup', keyUp);
+
+        function keyDown(e) {
+            e.preventDefault();
+            keys[e.key] = true;
+            //console.log(keys);
+        }
+        function keyUp(e) {
+            e.preventDefault();
+            keys[e.key] = false;
+            //console.log(keys);
+        }
+
+        function moveLines(){
+            let lines = document.querySelectorAll('.lines');    // this will take or select all the lines.
+            lines.forEach(function(item){    // taking every line as item.
+                if(item.y >= 700){    // this will prevent the line to go to the bottom continuously and as it reaches the height of 700 from the top then
+                    item.y -= 750;    // the top will again shifted to the top of -50 as (700-750).
+                }
+                item.y += player.speed;
+                item.style.top = item.y + "px";    // this will move the line from the top continuous fashion but for one time and it goes to bottom conntinuously.
+            })
+        }
+
+        function moveEnemy(car){
+            let enemy = document.querySelectorAll('.enemy');
+            enemy.forEach(function(item){
+
+                if(isCollide(car,item)){    // from closure and lexical scooping property this condition can able to access all the parameters, functions from
+                    console.log("Boom Hit...");// its parent function as well as its own child function.
+                    endGame();
+                }
+
+                if(item.y >= 750){
+                    item.y = -300;    // this will provide the distance of 300px from 3rd car to the 4th car. As the car reaches the bottom then instead of
+                                      // just starting from the top it will start (moving of car) from -300px from the top to give proper distance.
+                    item.style.left = Math.floor(Math.random() * 350) + "px";    // as the car reaches the bottom of road then using random function again we
+                }                                                                // changes the left position of all the cars.
+                item.y += (player.speed + 1);
+                item.style.top = item.y + "px";
+            })
+        }
+        // this 'isCollide' function will be called from the 'moveEnemy' function under forEach condition.
+        function isCollide(a,b){    // the parameter 'a' represents our actual car and the parameter 'b' represents any of the enemy car.
+            aRect = a.getBoundingClientRect();
+            bRect = b.getBoundingClientRect();
+
+            return !((aRect.top > bRect.bottom) || (aRect.bottom < bRect.top) || (aRect.right < bRect.left) || (aRect.left > bRect.right));
+        }
+
+        function endGame(){
+            player.start = false;
+            startScreen.classList.remove('hide');
+            startScreen.innerHTML= "Game Over <br> Your final score is " + player.score + " <br> Press here to restart the Game" 
+        }
+
+        function gamePlay() {
+            //console.log("Hey, I am clicked.");
+            let car = document.querySelector('.car');
+            let road = gameArea.getBoundingClientRect();    // the 'getBoundingClientRect' is an inbuilt function which automatically provides us value of all the
+            //console.log(road);                              // position of that particular class through which it is attached.
+            if (player.start) {
+
+                moveLines();
+                moveEnemy(car);
+
+                if (keys.ArrowLeft && player.x > 0) {
+                    player.x -= player.speed;
+                }
+                if (keys.ArrowRight && player.x < (road.width - 50)) {
+                    player.x += player.speed;
+                }
+                if (keys.ArrowUp && player.y > (road.top + 120)) {
+                    player.y -= player.speed;
+                }
+                if (keys.ArrowDown && player.y < (road.bottom - 70)) {
+                    player.y += player.speed;
+                }
+
+                car.style.left = player.x + "px";
+                car.style.top = player.y + "px";
+
+                player.score++;
+                let ps = player.score -1;
+                score.innerText = "Score:  " + ps;
+
+                window.requestAnimationFrame(gamePlay);    // now the window object keeps calling the 'gamePlay' function until car hits or user refresh the game.
+            }
+        }
+
+        function start() {
+            // gameArea.classList.remove('hide');
+            startScreen.classList.add('hide');
+            gameArea.innerHTML="";    // as we are explicitally declaring all the car, roadLine, enemyCar so why to add hide class in the gameArea.
+
+            player.start = true;    // until the player does not start the game, the game cannot be played.
+            player.score = 0;
+            window.requestAnimationFrame(gamePlay);    // as the player starts the game the window object calls the 'gamePlay' function or to start the game.
+
+            let car = document.createElement('div');
+            car.setAttribute('class', 'car');
+            gameArea.appendChild(car);     // adding the div tag with all the stuff in the gameArea class using javaScript.
+
+            for(x=0; x<5; x++){    // using for loop to create 5 lines onto the game area.
+                let roadLine = document.createElement('div');
+                roadLine.setAttribute('class', 'lines');
+                roadLine.y = (x*150)
+                roadLine.style.top = roadLine.y + "px";    // providing 50px gap to each road line of 100px.
+                gameArea.appendChild(roadLine);
+            }
+
+            for(x=0; x<3; x++){    // using for loop to create 3 enemy cars onto the game area.
+                let enemyCar = document.createElement('div');
+                enemyCar.setAttribute('class', 'enemy');
+                enemyCar.y = ((x+1)*350) * -1;    // giving the proper distance between the cars but it will only gives the distance in first loop of 3 cars and
+                                                  // from the next loop i.e., from 4th no. car have no distance and may comes over the 3rd one. Check the 
+                                                  // moveEnemy function for the proper distance beween 3rd and the 4th car.
+                enemyCar.style.top = enemyCar.y + "px";
+                enemyCar.style.backgroundColor = randomColor();    // the randomColor function is not an inbuilt function, we wil explicitly declare it below.
+                enemyCar.style.left = Math.floor(Math.random() * 350) + "px";    // The Math.floor() function returns the largest integer less than or equal
+                gameArea.appendChild(enemyCar);                                  // to a given number. The Math.random() function returns a floating-point,
+            }                                                                    // pseudo-random number in the range 0 to less than 1. And we multiply the
+                                                                                 // random number to 350 to provide the all the car into the full width of
+                                                                                 // the road.
+            
+            function randomColor(){
+                function c(){
+                    let hex = Math.floor(Math.random() * 256).toString(16);    // random function to take 0-1 int value and multiply it with 256 as color has range of
+                                                                               // (0-255). Then '.toString(16)' function is used to convert the no. into hex value. 
+                                                                               // And lastly floor function to returns the largest integer less than or equal to a
+                                                                               // given no.
+                    return ("0" + String(hex)).substr(-2);                     // '.substr(-2)' function gives the last two digit of the value so that it can be 
+                                                                               // called thrice to make complete hexa-decimal value and returning the value attached
+                                                                               // with 0 as prefix because it may possible that the previous return no. is a single
+                                                                               // digit value which cannot complete the hex no.
+                }
+                return "#"+c()+c()+c();     // we want this function to return the hex value which started with '#' and hsv with 2 digit each.
+            }
+
+            player.x = car.offsetLeft;    // we are adding properties with key-value pair in the 'player' object defined above.
+            player.y = car.offsetTop;
+
+            //console.log("top position " + car.offsetTop);    // offsetTop object is used to know the exact top position of the class through which it is called. It is
+            //console.log("left position " + car.offsetLeft);  // the same position which we have provided in the style tag. In the console it only gives the no. without
+        }                                                    // attaching 'px' i.e., for value 320px it gives just 320.
+
+    </script>
+</body>
+
+</html>
